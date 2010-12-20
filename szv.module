@@ -83,83 +83,6 @@ function szv_widget_settings($op, $widget) {
     case 'save':
       return array('size', 'city');
   }
-
-}
-
-/**
- * Helper form element validator : integer > 0.
- */
-function _szv_get_possible_city_field() {
-  // Get the content type the widget is on
-  $content_type_name = arg(3);
-  $content_type_info = content_types($content_type_name);
-
-  $fields = array();
-  foreach ($content_type_info['fields'] as $field_name => $field_info) {
- 
-    if ($field_info['type'] == 'text' && $field_info['widget']['type'] == 'text_textfield' && $field_info['multiple'] == 0) {      
-      $fields[$field_name] = $field_info['widget']['label'];
-    }    
-  }
-  return $fields;
-}
-
-
-/**
- * Form element validator.
- */
-function _szv_element_validate_zipcode($element, &$form_state) {
-
-  $value = $element['#value'];
-
-  if($form_state['values']['form_id'] == 'content_field_edit_form' && empty($value))
-    return;
-
-  if (!_szv_validate_postnummersok_bool($value)) {
-    form_error($element, t('%name must be in the swedish zipcode format.', array('%name' => $element['#title'])));
-  }
-}
-
-/**
- * Print result from API, to be interpreted by Javascript
- * @param <type> $zipcode
- */
-function _szv_validate_postnummersok_path($zipcode) {
-  $result = _szv_validate_postnummersok($zipcode);  
-  print $result !== false ? $result : '(null)';
-}
-
-/**
- * Function to be used by PHP to determine correct zipcode
- * @param <type> $zipcode
- * @return <type>
- */
-function _szv_validate_postnummersok_bool($zipcode) {
-  return (bool) _szv_validate_postnummersok($zipcode);
-}
-
-/**
- * Get json object from API
- */
-function _szv_validate_postnummersok($zipcode) {
-
-  // Strip whitespace (or other characters) from the beginning and end of the string
-  $zipcode = trim($zipcode);
-
-  // Check for a valid entered string
-  if (preg_match("/^(s-|s[ ]?|S-|S[ ]?)?[1-9]{1}[0-9]{2}( |-)?[0-9]{2}$/i", $zipcode)) {
-    $response = drupal_http_request(SZV_API."?q=$zipcode");
-    if (!$response->error) {
-      $response = (array) json_decode($response->data);
-    }
-    $result = ($response[0]);    
-  }
-
-  else {
-    return false;
-  }
-
-return $result;
 }
 
 /**
@@ -210,11 +133,11 @@ function szv_widget(&$form, &$form_state, $field, $items, $delta = 0) {
   );
 
   // Check if the API is online
-  if(_szv_site_online(SZV_API)) {   
+  if(_szv_site_online(SZV_API)) {
     drupal_add_js($js_settings, 'setting');
     drupal_add_js(drupal_get_path('module', 'szv') . '/szv.js');
   }
-  
+
   $element['value'] = array(
     '#type' => 'textfield',
     '#title' => $field['widget']['label'],
@@ -224,8 +147,84 @@ function szv_widget(&$form, &$form_state, $field, $items, $delta = 0) {
     '#maxlength' => !empty($field['max_length']) ? $field['max_length'] : NULL,
     '#element_validate' => array('_szv_element_validate_zipcode'),
   );
-  
+
   return $element;
+}
+
+/**
+ * Helper form element validator : integer > 0.
+ */
+function _szv_get_possible_city_field() {
+  // Get the content type the widget is on
+  $content_type_name = arg(3);
+  $content_type_info = content_types($content_type_name);
+
+  $fields = array();
+  foreach ($content_type_info['fields'] as $field_name => $field_info) {
+ 
+    if ($field_info['type'] == 'text' && $field_info['widget']['type'] == 'text_textfield' && $field_info['multiple'] == 0) {      
+      $fields[$field_name] = $field_info['widget']['label'];
+    }    
+  }
+  return $fields;
+}
+
+/**
+ * Form element validator.
+ */
+function _szv_element_validate_zipcode($element, &$form_state) {
+
+  $value = $element['#value'];
+
+  // If the default value for the field is not set, we don't validate it
+  if($form_state['values']['form_id'] == 'content_field_edit_form' && empty($value))
+    return;
+
+  if (!_szv_validate_postnummersok_bool($value)) {
+    form_error($element, t('%name must be in the swedish zipcode format.', array('%name' => $element['#title'])));
+  }
+}
+
+/**
+ * Print result from API, to be interpreted by Javascript
+ * @param <type> $zipcode
+ */
+function _szv_validate_postnummersok_path($zipcode) {
+  $result = _szv_validate_postnummersok($zipcode);  
+  print $result !== false ? $result : '(null)';
+}
+
+/**
+ * Function to be used by PHP to determine correct zipcode
+ * @param <type> $zipcode
+ * @return <type>
+ */
+function _szv_validate_postnummersok_bool($zipcode) {
+  return (bool) _szv_validate_postnummersok($zipcode);
+}
+
+/**
+ * Get json object from API
+ */
+function _szv_validate_postnummersok($zipcode) {
+
+  // Strip whitespace (or other characters) from the beginning and end of the string
+  $zipcode = trim($zipcode);
+
+  // Check for a valid entered string
+  if (preg_match("/^(s-|s[ ]?|S-|S[ ]?)?[1-9]{1}[0-9]{2}( |-)?[0-9]{2}$/i", $zipcode)) {
+    $response = drupal_http_request(SZV_API."?q=$zipcode");
+    if (!$response->error) {
+      $response = (array) json_decode($response->data);
+    }
+    $result = ($response[0]);    
+  }
+
+  else {
+    return false;
+  }
+
+return $result;
 }
 
 /**

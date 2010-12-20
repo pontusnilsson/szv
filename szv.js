@@ -17,6 +17,7 @@ Drupal.behaviors.szv = function(context) {
 
     $('.'+fieldsInfo[i]['selector']).keyup(function(e){
 
+
       var $this = $(e.target),
           val = $this.val();
 
