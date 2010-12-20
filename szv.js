@@ -54,3 +54,4 @@ Drupal.szv = {
     return fieldsInfo;
   }
 }
+

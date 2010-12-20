@@ -72,7 +72,7 @@ function szv_widget_settings($op, $widget) {
         '#type' => 'select',
         '#title' => t('Select city field'),
         '#default_value' => $city,
-        '#options' => szv_get_possible_city_field(),
+        '#options' => _szv_get_possible_city_field(),
         '#element_validate' => array(),
         '#required' => TRUE,
       );
@@ -93,7 +93,7 @@ function szv_widget_settings($op, $widget) {
 /**
  * Helper form element validator : integer > 0.
  */
-function szv_get_possible_city_field() {
+function _szv_get_possible_city_field() {
   // Get the content type the widget is on
   $content_type_name = arg(3);
   $content_type_info = content_types($content_type_name);
@@ -110,7 +110,7 @@ function szv_get_possible_city_field() {
 
 
 /**
- * Helper form element validator : integer > 0.
+ * Form element validator.
  */
 function _szv_element_validate_zipcode($element, &$form_state) {
 
@@ -119,7 +119,7 @@ function _szv_element_validate_zipcode($element, &$form_state) {
   if($form_state['values']['form_id'] == 'content_field_edit_form' && empty($value))
     return;
 
-  if (!szv_validate_postnummersok_bool($value)) {
+  if (!_szv_validate_postnummersok_bool($value)) {
     form_error($element, t('%name must be in the swedish zipcode format.', array('%name' => $element['#title'])));
   }
 }
@@ -128,8 +128,9 @@ function _szv_element_validate_zipcode($element, &$form_state) {
  * Print result from API, to be interpreted by Javascript
  * @param <type> $zipcode
  */
-function szv_validate_postnummersok_path($zipcode) {
-  print szv_validate_postnummersok($zipcode);
+function _szv_validate_postnummersok_path($zipcode) {
+  $result = _szv_validate_postnummersok($zipcode);
+  print $result !== false ? $result : '(null)';
 }
 
 /**
@@ -137,14 +138,14 @@ function szv_validate_postnummersok_path($zipcode) {
  * @param <type> $zipcode
  * @return <type>
  */
-function szv_validate_postnummersok_bool($zipcode) {
-  szv_validate_postnummersok($zipcode)=='(null)' ? FALSE : TRUE;
+function _szv_validate_postnummersok_bool($zipcode) {
+  return (bool) _szv_validate_postnummersok($zipcode);
 }
 
 /**
  * Get json object from API
  */
-function szv_validate_postnummersok($zipcode) {
+function _szv_validate_postnummersok($zipcode) {
 
   $zipcode = trim($zipcode);
 
@@ -158,7 +159,7 @@ function szv_validate_postnummersok($zipcode) {
   }
 
   else {
-    $result = '(null)';    
+    return false;
   }
 
 return $result;
@@ -213,7 +214,7 @@ function szv_widget(&$form, &$form_state, $field, $items, $delta = 0) {
 
   // Check if the site we use is online and that the path is available
   // TODO Find a way to use settings for differnt APIs.
-  if(szv_site_online(SZV_API)) {
+  if(_szv_site_online(SZV_API)) {
     $form_state['szv']['api_online'] = TRUE;
     drupal_add_js($js_settings, 'setting');
     drupal_add_js(drupal_get_path('module', 'szv') . '/szv.js');
@@ -240,7 +241,7 @@ function szv_widget(&$form, &$form_state, $field, $items, $delta = 0) {
  * Function to check if a site is online
  */
 
-function szv_site_online($url)
+function _szv_site_online($url)
 {
   $result = drupal_http_request($url);
 
@@ -255,3 +256,4 @@ function szv_site_online($url)
 
   return in_array($result->code, $accepted_response_codes) && !$result->error ? TRUE : FALSE;
 }
+
