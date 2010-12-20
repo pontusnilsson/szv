@@ -31,7 +31,7 @@ Drupal.behaviors.szv = function(context) {
                 $cityElem.val(cityVal);
             })
           }
-          if(oldVal.match(/\d{5}/) && val.match(/\d{4}/)){
+          if(oldVal.match(/\d{5}/) && val.match(/\d{4}/) && oldVal != val){
             $cityElem.val(helpText);
           }
 
