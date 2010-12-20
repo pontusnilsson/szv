@@ -1,0 +1,17 @@
+// $Id$
+
+CCK widget for textfields that validates swedish zipcodes. 
+
+* Assumes you have one field for swedish zipcode and one field for city. When enabled the city field will be disabled by javascript.
+* If a valid zipcode is entered it prepopulates the city field by Javascript. When submitting the form the value is also validated. 
+
+If the API cannot be reached the validation is disabled.
+
+This module currently builds on the API postnummersok.se provides.
+
+INSTALLATION
+
+1. Enable the module
+2. Create a textfield for city on the content type you wish to use
+3. Create a textfield for zipcode, choose swedish zipcode as widget
+4. Create a node of the content type you added the fields to, enter a swedish zipcode in the field and watch how it prepopulates the city field
