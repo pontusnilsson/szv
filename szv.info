@@ -1,0 +1,6 @@
+; $Id$
+name = Swedish zipcode validator
+description = Defines a CCK widget for textfield that validates Swedish zipcodes.
+dependencies[] = content
+package = CCK
+core = 6.x

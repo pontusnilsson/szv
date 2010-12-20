@@ -1,0 +1,58 @@
+# $Id$
+#
+# LANGUAGE translation of Drupal (general)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  szv.module: n/a
+#  szv.info: n/a
+#  szv.js: n/a
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2010-12-20 11:56+0100\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Last-Translator: NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: szv.module:29
+msgid "Swedish zipcode"
+msgstr ""
+
+#: szv.module:65
+msgid "Size of textfield"
+msgstr ""
+
+#: szv.module:73
+msgid "Select city field"
+msgstr ""
+
+#: szv.module:123
+msgid "%name must be in the swedish zipcode format."
+msgstr ""
+
+#: szv.info:0
+msgid "Swedish zipcode validator"
+msgstr ""
+
+#: szv.info:0
+msgid "Defines a CCK widget for textfield that validates Swedish zipcodes."
+msgstr ""
+
+#: szv.info:0
+msgid "CCK"
+msgstr ""
+
+#: szv.js:0
+msgid "Inserted automatically"
+msgstr ""
+
+#: szv.js:0
+msgid "City not found"
+msgstr ""
+

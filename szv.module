@@ -1,0 +1,257 @@
+<?php
+// $Id$
+define('SZV_API', 'http://www.postnummersok.se/api');
+
+/**
+* Implementation of hook_menu().
+*/
+function szv_menu() {
+  $items = array();
+
+  $items['szv'] = array(
+    'page callback' => 'szv_validate_postnummersok_path',
+    'access callback' => TRUE,
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_widget_info()
+ */
+function szv_widget_info() {
+  return array(
+    // The machine name of the widget, no more than 32
+    // characters.
+    'szv_widget' => array(
+      // The human-readable label of the field that will be
+      // seen in the Manage fields screen.
+      'label' => t('Swedish zipcode'),
+      // An array of the field types this widget can be
+      // used with.
+      'field types' => array('text'),
+      // Who will handle multiple values, default is core.
+      // 'CONTENT_HANDLE_MODULE' means the module does it.
+      // See optionwidgets for an example of a module that
+      // handles its own multiple values.
+      'multiple values' => CONTENT_HANDLE_CORE,
+      'callbacks' => array(
+        // Who will create the default value, default is core.
+        // 'CONTENT_CALLBACK_CUSTOM' means the module does it.
+        // 'CONTENT_CALLBACK_NONE' means this widget has
+        // no default value.
+        'default value' => CONTENT_CALLBACK_DEFAULT,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_widget_settings().
+ */
+function szv_widget_settings($op, $widget) {
+  switch ($op) {
+    // Create the form element to be used on the widget
+    // settings form. Widget settings can be different
+    // for each shared instance of the same field and
+    // should define the way the value is displayed to
+    // the user in the edit form for that content type.
+    case 'form':
+      $form = array();
+      // Swedish zipcodes are 5 characters in length.
+      $size = (isset($widget['size']) && is_numeric($widget['size'])) ? $widget['size'] : 5;            
+      $form['size'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Size of textfield'),
+        '#default_value' => $size,
+        '#element_validate' => array('_element_validate_integer_positive'),
+        '#required' => TRUE,
+      );
+      $city = (isset($widget['city'])) ? $widget['city'] : '';
+      $form['city'] = array(
+        '#type' => 'select',
+        '#title' => t('Select city field'),
+        '#default_value' => $city,
+        '#options' => szv_get_possible_city_field(),
+        '#element_validate' => array(),
+        '#required' => TRUE,
+      );
+
+      return $form;
+
+    // Return an array of the names of the widget settings
+    // defined by this module. These are the items that
+    // CCK will store in the widget definition and they
+    // will be available in the $field['widget'] array.
+    // This should match the items defined in 'form' above.
+    case 'save':
+      return array('size', 'city');
+  }
+
+}
+
+/**
+ * Helper form element validator : integer > 0.
+ */
+function szv_get_possible_city_field() {
+  // Get the content type the widget is on
+  $content_type_name = arg(3);
+  $content_type_info = content_types($content_type_name);
+
+  $fields = array();
+  foreach ($content_type_info['fields'] as $field_name => $field_info) {
+ 
+    if ($field_info['type'] == 'text' && $field_info['widget']['type'] == 'text_textfield' && $field_info['multiple'] == 0) {      
+      $fields[$field_name] = $field_info['widget']['label'];
+    }    
+  }
+  return $fields;
+}
+
+
+/**
+ * Helper form element validator : integer > 0.
+ */
+function _szv_element_validate_zipcode($element, &$form_state) {
+
+  $value = $element['#value'];
+
+  if($form_state['values']['form_id'] == 'content_field_edit_form' && empty($value))
+    return;
+
+  if (!szv_validate_postnummersok_bool($value)) {
+    form_error($element, t('%name must be in the swedish zipcode format.', array('%name' => $element['#title'])));
+  }
+}
+
+/**
+ * Print result from API, to be interpreted by Javascript
+ * @param <type> $zipcode
+ */
+function szv_validate_postnummersok_path($zipcode) {
+  print szv_validate_postnummersok($zipcode);
+}
+
+/**
+ * Function to be used by PHP to determine correct zipcode
+ * @param <type> $zipcode
+ * @return <type>
+ */
+function szv_validate_postnummersok_bool($zipcode) {
+  szv_validate_postnummersok($zipcode)=='(null)' ? FALSE : TRUE;
+}
+
+/**
+ * Get json object from API
+ */
+function szv_validate_postnummersok($zipcode) {
+
+  $zipcode = trim($zipcode);
+
+  // Check for a valid entered string
+  if (preg_match("/^(s-|s[ ]?|S-|S[ ]?)?[1-9]{1}[0-9]{2}( |-)?[0-9]{2}$/i", $zipcode)) {
+    $response = drupal_http_request(SZV_API."?q=$zipcode");
+    if (!$response->error) {
+      $response = (array) json_decode($response->data);
+    }
+    $result = ($response[0]);    
+  }
+
+  else {
+    $result = '(null)';    
+  }
+
+return $result;
+}
+
+/**
+ * Implementation of hook_widget().
+ *
+ * Attach a single form element to the form.
+ *
+ * CCK core fields only add a stub element and builds
+ * the complete item in #process so reusable elements
+ * created by hook_elements can be plugged into any
+ * module that provides valid $field information.
+ *
+ * Custom widgets that don't care about using hook_elements
+ * can be built out completely at this time.
+ *
+ * If there are multiple values for this field and CCK is
+ * handling multiple values, the content module will call
+ * this function as many times as needed.
+ *
+ * @param $form
+ *   the entire form array,
+ *   $form['#node'] holds node information
+ * @param $form_state
+ *   the form_state,
+ *   $form_state['values'][$field['field_name']]
+ *   holds the field's form values.
+ * @param $field
+ *   the field array
+ * @param $items
+ *   array of default values for this field
+ * @param $delta
+ *   the order of this item in the array of
+ *   subelements (0, 1, 2, etc)
+ *
+ * @return
+ *   the form item for a single element for this field
+ */
+function szv_widget(&$form, &$form_state, $field, $items, $delta = 0) {
+
+  $zipCodeSel = 'szv-'.$delta.'-zipcode';
+  $js_settings = array(
+      'szv' => array(
+          $field['field_name'] => array(
+            'city' => $field['widget']['city'],
+            'selector' => $zipCodeSel
+          )
+      )
+  );
+
+  // Check if the site we use is online and that the path is available
+  // TODO Find a way to use settings for differnt APIs.
+  if(szv_site_online(SZV_API)) {
+    $form_state['szv']['api_online'] = TRUE;
+    drupal_add_js($js_settings, 'setting');
+    drupal_add_js(drupal_get_path('module', 'szv') . '/szv.js');
+  }
+  else
+  {
+    $form_state['szv']['api_online'] = FALSE;
+  }
+  
+  $element['value'] = array(
+    '#type' => 'textfield',
+    '#title' => $field['widget']['label'],
+    '#default_value' => isset($items[$delta]['value']) ? $items[$delta]['value'] : NULL,
+    '#size' => !empty($field['widget']['size']) ? $field['widget']['size'] : 5,
+    '#attributes' => array('class' => 'text '.$zipCodeSel),
+    '#maxlength' => !empty($field['max_length']) ? $field['max_length'] : NULL,
+    '#element_validate' => array('_szv_element_validate_zipcode'),
+  );
+
+  return $element;
+}
+
+/**
+ * Function to check if a site is online
+ */
+
+function szv_site_online($url)
+{
+  $result = drupal_http_request($url);
+
+  // We only accept responses with certain response codes
+  $accepted_response_codes = array(
+    200, // OK
+    304, // Not modified
+    301, // Moved permanently
+    302, // Found
+    307, // Temporary Redirect
+  );
+
+  return in_array($result->code, $accepted_response_codes) && !$result->error ? TRUE : FALSE;
+}
