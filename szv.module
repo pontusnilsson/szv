@@ -9,7 +9,7 @@ function szv_menu() {
   $items = array();
 
   $items['szv'] = array(
-    'page callback' => 'szv_validate_postnummersok_path',
+    'page callback' => '_szv_validate_postnummersok_path',
     'access callback' => TRUE,
     'type' => MENU_LOCAL_TASK,
   );
@@ -21,8 +21,7 @@ function szv_menu() {
  */
 function szv_widget_info() {
   return array(
-    // The machine name of the widget, no more than 32
-    // characters.
+    // The machine name of the widget
     'szv_widget' => array(
       // The human-readable label of the field that will be
       // seen in the Manage fields screen.
@@ -80,10 +79,7 @@ function szv_widget_settings($op, $widget) {
       return $form;
 
     // Return an array of the names of the widget settings
-    // defined by this module. These are the items that
-    // CCK will store in the widget definition and they
-    // will be available in the $field['widget'] array.
-    // This should match the items defined in 'form' above.
+    // defined by this module.
     case 'save':
       return array('size', 'city');
   }
@@ -129,7 +125,7 @@ function _szv_element_validate_zipcode($element, &$form_state) {
  * @param <type> $zipcode
  */
 function _szv_validate_postnummersok_path($zipcode) {
-  $result = _szv_validate_postnummersok($zipcode);
+  $result = _szv_validate_postnummersok($zipcode);  
   print $result !== false ? $result : '(null)';
 }
 
@@ -147,6 +143,7 @@ function _szv_validate_postnummersok_bool($zipcode) {
  */
 function _szv_validate_postnummersok($zipcode) {
 
+  // Strip whitespace (or other characters) from the beginning and end of the string
   $zipcode = trim($zipcode);
 
   // Check for a valid entered string
@@ -212,16 +209,10 @@ function szv_widget(&$form, &$form_state, $field, $items, $delta = 0) {
       )
   );
 
-  // Check if the site we use is online and that the path is available
-  // TODO Find a way to use settings for differnt APIs.
-  if(_szv_site_online(SZV_API)) {
-    $form_state['szv']['api_online'] = TRUE;
+  // Check if the API is online
+  if(_szv_site_online(SZV_API)) {   
     drupal_add_js($js_settings, 'setting');
     drupal_add_js(drupal_get_path('module', 'szv') . '/szv.js');
-  }
-  else
-  {
-    $form_state['szv']['api_online'] = FALSE;
   }
   
   $element['value'] = array(
@@ -233,14 +224,13 @@ function szv_widget(&$form, &$form_state, $field, $items, $delta = 0) {
     '#maxlength' => !empty($field['max_length']) ? $field['max_length'] : NULL,
     '#element_validate' => array('_szv_element_validate_zipcode'),
   );
-
+  
   return $element;
 }
 
 /**
  * Function to check if a site is online
  */
-
 function _szv_site_online($url)
 {
   $result = drupal_http_request($url);
@@ -256,4 +246,3 @@ function _szv_site_online($url)
 
   return in_array($result->code, $accepted_response_codes) && !$result->error ? TRUE : FALSE;
 }
-
