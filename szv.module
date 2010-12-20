@@ -1,5 +1,11 @@
 <?php
 // $Id$
+
+/**
+ * @file
+ * Defines a widget for entering swedish zipcodes
+ */
+
 define('SZV_API', 'http://www.postnummersok.se/api');
 
 /**
@@ -133,7 +139,7 @@ function szv_widget(&$form, &$form_state, $field, $items, $delta = 0) {
   );
 
   // Check if the API is online
-  if(_szv_site_online(SZV_API)) {
+  if (_szv_site_online(SZV_API)) {
     drupal_add_js($js_settings, 'setting');
     drupal_add_js(drupal_get_path('module', 'szv') . '/szv.js');
   }
@@ -152,7 +158,7 @@ function szv_widget(&$form, &$form_state, $field, $items, $delta = 0) {
 }
 
 /**
- * Helper form element validator : integer > 0.
+ * Function to find fields that could be used as city field in the widget settings
  */
 function _szv_get_possible_city_field() {
   // Get the content type the widget is on
@@ -170,7 +176,7 @@ function _szv_get_possible_city_field() {
 }
 
 /**
- * Form element validator.
+ * Form element validator
  */
 function _szv_element_validate_zipcode($element, &$form_state) {
 
@@ -180,8 +186,8 @@ function _szv_element_validate_zipcode($element, &$form_state) {
   if($form_state['values']['form_id'] == 'content_field_edit_form' && empty($value))
     return;
 
-  if (!_szv_validate_postnummersok_bool($value)) {
-    form_error($element, t('%name must be in the swedish zipcode format.', array('%name' => $element['#title'])));
+  if (!_szv_validate_postnummersok_bool($value)) { dpm($element);
+    form_error($element, t('%name must be in the swedish zipcode format.', $element['#title']));
   }
 }
 

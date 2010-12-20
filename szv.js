@@ -21,7 +21,7 @@ Drupal.behaviors.szv = function(context) {
       var $this = $(e.target),
           val = $this.val();
 
-          if(val.match(/\d{5}/) && oldVal != val){
+          if(val.match(/\d{5}/) && oldVal != val){            
 
             $.getJSON(Drupal.settings.basePath+'szv/'+val, function(response){
 
