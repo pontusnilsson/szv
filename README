@@ -1,5 +1,7 @@
 // $Id$
 
+Module by http://github.com/emattias and http://github.com/pontusnilsson
+
 CCK widget for textfields that validates swedish zipcodes. 
 
 * Assumes you have one field for swedish zipcode and one field for city. When enabled the city field will be disabled by javascript.
