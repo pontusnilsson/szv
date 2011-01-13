@@ -6,36 +6,66 @@ Drupal.behaviors.szv = function(context) {
   var fieldsInfo = Drupal.szv.getFieldsInfo(),
       oldVal = '',
       helpText = Drupal.t('Inserted automatically'),
-      cityVal = Drupal.t('City not found');
+      cityNotFoundVal = Drupal.t('City not found'),
+      cityVal,
+      $throbber = $('<div class="szv-throbber"></div>');
 
   for(var i in fieldsInfo){
 
     var citySel = '#edit-'+fieldsInfo[i]['city'].replace('_','-')+'-0-value',
         $cityElem = $(citySel);
 
-    $cityElem.val(helpText).attr('disabled','disabled');
+    if($cityElem.val().length == 0){
+      $cityElem.val(helpText);
+    }
+    $cityElem.attr('disabled','disabled').addClass('szv-city');
 
-    $('.'+fieldsInfo[i]['selector']).keyup(function(e){
+    $('.'+fieldsInfo[i]['selector']).after('<div class="clear-block"></div>').each(function(i,e){
 
+      var $form = $(e).parents('form');
+
+      if($form.not('.szv-processed')){
+
+        $form.bind('submit',function(e){
+
+          $form.find('.szv-city').removeAttr('disabled');
+
+        }).addClass('szv-processed');
+
+      };
+
+    }).keyup(function(e){
 
       var $this = $(e.target),
           val = $this.val();
 
-          if(val.match(/\d{5}/) && oldVal != val){            
+          if(val.length > 4 && oldVal != val){
+
+            $this.after($throbber);
 
             $.getJSON(Drupal.settings.basePath+'szv/'+val, function(response){
 
               if(response != null){
                 cityVal = response[0];
+              }else{
+                cityVal = cityNotFoundVal;
               }
-                $cityElem.val(cityVal);
+
+              $cityElem.val(cityVal);
+
+              $throbber.remove();
             })
-          }
-          if(oldVal.match(/\d{5}/) && val.match(/\d{4}/) && oldVal != val){
+          }else if(val.length < 5){
+
             $cityElem.val(helpText);
+
           }
 
-          oldVal = val;          
+//          if(oldVal.match(/\d{5}/) && val.match(/\d{4}/) && oldVal != val){
+//            $cityElem.val(helpText);
+//          }
+
+          oldVal = val;      
     });
   }
 };
