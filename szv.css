@@ -1,0 +1,10 @@
+.szv-zipcode{
+  float:left;
+}
+
+.szv-throbber {
+    background: url("/misc/throbber.gif") no-repeat scroll 0 -18px transparent;
+    float: left;
+    height: 15px;
+    width: 15px;
+}
