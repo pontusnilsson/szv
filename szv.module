@@ -1,5 +1,4 @@
 <?php
-a	
 // $Id$
 
 /**
@@ -93,6 +92,25 @@ function szv_widget_settings($op, $widget) {
 }
 
 /**
+ * Implementation of FAPI hook_elements().
+ *
+ * Any FAPI callbacks needed for individual widgets can be declared here,
+ * and the element will be passed to those callbacks for processing.
+ *
+ * Drupal will automatically theme the element using a theme with
+ * the same name as the hook_elements key.
+ */
+function szv_elements() {
+  return array(
+    'szv_widget' => array(
+      '#input' => TRUE,
+      '#columns' => array('value'), '#delta' => 0,
+      '#process' => array('szv_widget_process'),
+    )
+  );
+}
+
+/**
  * Implementation of hook_widget().
  *
  * Attach a single form element to the form.
@@ -127,7 +145,39 @@ function szv_widget_settings($op, $widget) {
  * @return
  *   the form item for a single element for this field
  */
-function szv_widget(&$form, &$form_state, $field, $items, $delta = 0) {
+function szv_widget(&$form, &$form_state, $field, $items, $delta = 0) {  
+  $element = array(
+    '#type' => $field['widget']['type'],
+    '#default_value' => isset($items[$delta]) ? $items[$delta] : '',
+    '#element_validate' => array('_szv_element_validate_zipcode'),
+  );
+  return $element;
+
+  $element['value'] = array(
+    '#type' => 'textfield',
+    '#title' => $field['widget']['label'],
+    '#default_value' => isset($items[$delta]['value']) ? $items[$delta]['value'] : NULL,
+    '#size' => !empty($field['widget']['size']) ? $field['widget']['size'] : 5,
+    '#attributes' => array('class' => 'text '.$zipCodeSel),
+    '#maxlength' => !empty($field['max_length']) ? $field['max_length'] : NULL,
+    '#element_validate' => array('_szv_element_validate_zipcode'),
+  );
+
+  return $element;
+}
+
+/**
+ * Process an individual element.
+ *
+ * Build the form element. When creating a form using FAPI #process,
+ * note that $element['#value'] is already set.
+ *
+ * The $fields array is in $form['#field_info'][$element['#field_name']].
+ */
+function szv_widget_process($element, $edit, $form_state, $form) {  
+  $field = $form['#field_info'][$element['#field_name']];
+  $field_key = $element['#columns'][0];
+  $delta = $element['#delta'];
 
   $zipCodeSel = 'szv-'.$delta.'-zipcode';
   $js_settings = array(
@@ -141,19 +191,36 @@ function szv_widget(&$form, &$form_state, $field, $items, $delta = 0) {
 
   // Check if the API is online
   if (_szv_site_online(SZV_API)) {
+    drupal_add_css(drupal_get_path('module', 'szv') . '/szv.css');
     drupal_add_js($js_settings, 'setting');
     drupal_add_js(drupal_get_path('module', 'szv') . '/szv.js');
   }
 
-  $element['value'] = array(
+  /*
+  $element = array(
     '#type' => 'textfield',
-    '#title' => $field['widget']['label'],
-    '#default_value' => isset($items[$delta]['value']) ? $items[$delta]['value'] : NULL,
-    '#size' => !empty($field['widget']['size']) ? $field['widget']['size'] : 5,
-    '#attributes' => array('class' => 'text '.$zipCodeSel),
+    '#default_value' => isset($element['#value'][$field_key]) ? $element['#value'][$field_key] : NULL,    
+    '#size' => !empty($field['widget']['size']) ? $field['widget']['size'] : 60,
     '#maxlength' => !empty($field['max_length']) ? $field['max_length'] : NULL,
-    '#element_validate' => array('_szv_element_validate_zipcode'),
+    '#attributes' => array('class' => 'text szv'),
+    // The following values were set by the content module and need
+    // to be passed down to the nested element.
+    '#title' => $element['#title'],
+    '#description' => $element['#description'],
+    '#required' => $element['#required'],
+    '#field_name' => $element['#field_name'],
+    '#type_name' => $element['#type_name'],
+    '#delta' => $element['#delta'],
+    '#columns' => $element['#columns'],
   );
+   */
+
+  $element['#type'] = 'textfield';
+  $element['#default_value'] = isset($element['#value'][$field_key]) ? $element['#value'][$field_key] : NULL;
+  $element['#size'] = !empty($field['widget']['size']) ? $field['widget']['size'] : 60;
+  $element['#maxlength'] = !empty($field['max_length']) ? $field['max_length'] : NULL;
+  $element['#attributes'] = array('class' => 'text szv-zipcode '.$zipCodeSel);
+  $element['#columns'] = $element['#columns'];
 
   return $element;
 }
@@ -180,15 +247,16 @@ function _szv_get_possible_city_field() {
  * Form element validator
  */
 function _szv_element_validate_zipcode($element, &$form_state) {
-
+  
   $value = $element['#value'];
 
-  // If the default value for the field is not set, we don't validate it
+  // If the default value for the field is not set on the widget settings page, we don't validate it
   if($form_state['values']['form_id'] == 'content_field_edit_form' && empty($value))
     return;
 
-  if (!_szv_validate_postnummersok_bool($value)) { dpm($element);
-    form_error($element, t('%name must be in the swedish zipcode format.', $element['#title']));
+  if (!_szv_validate_postnummersok_bool($value)) {
+    
+    form_error($element, t('!name must be in the swedish zipcode format.', array('!name' => $element['#title'])));
   }
 }
 
@@ -207,7 +275,9 @@ function _szv_validate_postnummersok_path($zipcode) {
  * @return <type>
  */
 function _szv_validate_postnummersok_bool($zipcode) {
-  return (bool) _szv_validate_postnummersok($zipcode);
+  $response = _szv_validate_postnummersok($zipcode);
+    
+  return $response == '(null)' ? false : true;
 }
 
 /**
@@ -217,21 +287,11 @@ function _szv_validate_postnummersok($zipcode) {
 
   // Strip whitespace (or other characters) from the beginning and end of the string
   $zipcode = trim($zipcode);
+  
+    $response = drupal_http_request(SZV_API."?q=$zipcode");    
+    $response = (array) json_decode($response->data);
 
-  // Check for a valid entered string
-  if (preg_match("/^(s-|s[ ]?|S-|S[ ]?)?[1-9]{1}[0-9]{2}( |-)?[0-9]{2}$/i", $zipcode)) {
-    $response = drupal_http_request(SZV_API."?q=$zipcode");
-    if (!$response->error) {
-      $response = (array) json_decode($response->data);
-    }
-    $result = ($response[0]);    
-  }
-
-  else {
-    return false;
-  }
-
-return $result;
+return $response[0];
 }
 
 /**
